@@ -1,57 +1,16 @@
 const functions = require("firebase-functions");
-const admin = require("firebase-admin");
-const serviceAccount = require("./firebaseconfig.json");
+const app = require("express")();
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  databaseURL: "https://socialapp-21755.firebaseio.com"
-});
+const { getAllScreams, postOneScream } = require("./handlers/screams");
+const { signup, login } = require("./handlers/users");
+const FBAuth = require("./util/FBAuth");
 
-const express = require("express");
-const app = express();
+// scream routes
+app.get("/screams", getAllScreams);
+app.post("/screams", FBAuth, postOneScream);
 
-app.get("/screams", (req, res) => {
-  admin
-    .firestore()
-    .collection("screams")
-    .orderBy("createdAt", "desc")
-    .get()
-    .then(data => {
-      let screams = [];
-      data.forEach(doc => {
-        screams.push({
-          screamId: doc.id,
-          body: doc.data().body,
-          userHandle: doc.data().userHandle,
-          createdAt: doc.data().createdAt
-        });
-      });
-
-      return res.json(screams);
-    })
-    .catch(err => console.error(err));
-});
-
-app.post("/screams", (req, res) => {
-  const newScream = {
-    body: req.body.body,
-    userHandle: req.body.userHandle,
-    createdAt: new Date().toISOString()
-  };
-
-  admin
-    .firestore()
-    .collection("screams")
-    .add(newScream)
-    .then(doc => {
-      return res.json({
-        message: `document ${doc.id} created successfully`
-      });
-    })
-    .catch(err => {
-      res.status(500).json({ error: "something whent wrong" });
-      console.error(err);
-    });
-});
+// user routes
+app.post("/signup", signup);
+app.post("/login", login);
 
 exports.api = functions.https.onRequest(app);
