@@ -66,3 +66,4 @@ node_modules/
 
 # firebase credentials
 firebaseconfig.json
+config.json
